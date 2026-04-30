@@ -7,7 +7,7 @@ plugins {
 }
 
 group = "dev.vmonot"
-version = "1.0.0-SNAPSHOT"
+version = "1.0.1"
 
 // Set the JVM language level used to build the project.
 kotlin {
