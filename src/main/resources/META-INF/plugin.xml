@@ -21,18 +21,6 @@
     <depends>org.jetbrains.plugins.yaml</depends>
     <depends optional="true">com.intellij.swagger</depends>
 
-    <actions>
-        <action id="ScalarOpenApiPreview.OpenScalarPreview"
-                class="dev.vmonot.OpenScalarPreviewAction"
-                text="Open Scalar Preview"
-                description="Open this OpenAPI specification in Scalar"
-                icon="AllIcons.Webreferences.Openapi">
-            <add-to-group group-id="EditorContextBarMenu"/>
-            <add-to-group group-id="EditorPopupMenu" anchor="last"/>
-            <add-to-group group-id="ProjectViewPopupMenu" anchor="last"/>
-        </action>
-    </actions>
-
     <!-- Extensions defined by the plugin.
          Read more: https://plugins.jetbrains.com/docs/intellij/plugin-extension-points.html -->
     <extensions defaultExtensionNs="com.intellij">
