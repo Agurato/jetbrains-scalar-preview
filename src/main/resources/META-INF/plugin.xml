@@ -19,7 +19,7 @@
     <!-- Product and plugin compatibility requirements.
          Read more: https://plugins.jetbrains.com/docs/intellij/plugin-compatibility.html -->
     <depends>com.intellij.modules.platform</depends>
-    <depends optional="true">com.intellij.swagger</depends>
+    <depends optional="true" config-file="dev.vmonot.scalar-openapi-preview-withSwagger.xml">com.intellij.swagger</depends>
 
     <!-- Extensions defined by the plugin.
          Read more: https://plugins.jetbrains.com/docs/intellij/plugin-extension-points.html -->

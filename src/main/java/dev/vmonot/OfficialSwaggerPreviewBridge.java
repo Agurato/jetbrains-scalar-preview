@@ -5,7 +5,6 @@ import com.intellij.ide.plugins.IdeaPluginDescriptor;
 import com.intellij.openapi.extensions.PluginId;
 import com.intellij.openapi.fileEditor.FileEditor;
 import com.intellij.openapi.fileEditor.TextEditor;
-import com.intellij.openapi.progress.PerformInBackgroundOption;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vfs.VirtualFile;
 import kotlin.Unit;
@@ -25,6 +24,8 @@ public final class OfficialSwaggerPreviewBridge {
             "com.intellij.swagger.core.ui.browser.strategy.RedocProviderStrategy";
     private static final String SWAGGER_UI_PROVIDER_STRATEGY_CLASS =
             "com.intellij.swagger.core.ui.browser.strategy.SwaggerUiProviderStrategy";
+    private static final String PERFORM_IN_BACKGROUND_OPTION_CLASS =
+            "com.intellij.openapi.progress.PerformInBackgroundOption";
 
     private OfficialSwaggerPreviewBridge() {
     }
@@ -78,13 +79,13 @@ public final class OfficialSwaggerPreviewBridge {
         Method loadHtmlInBackground = browserClass.getMethod(
                 "loadHtmlInBackground",
                 VirtualFile.class,
-                PerformInBackgroundOption.class,
+                requireClass(PERFORM_IN_BACKGROUND_OPTION_CLASS, pluginClassLoader),
                 Function0.class
         );
         loadHtmlInBackground.invoke(
                 preview,
                 file,
-                PerformInBackgroundOption.ALWAYS_BACKGROUND,
+                alwaysBackgroundOption(pluginClassLoader),
                 (Function0<Unit>) () -> Unit.INSTANCE
         );
 
@@ -114,6 +115,12 @@ public final class OfficialSwaggerPreviewBridge {
     private static Object strategyInstance(String strategyClassName, ClassLoader pluginClassLoader)
             throws ReflectiveOperationException {
         return requireClass(strategyClassName, pluginClassLoader).getField("INSTANCE").get(null);
+    }
+
+    private static Object alwaysBackgroundOption(ClassLoader pluginClassLoader) throws ReflectiveOperationException {
+        return requireClass(PERFORM_IN_BACKGROUND_OPTION_CLASS, pluginClassLoader)
+                .getField("ALWAYS_BACKGROUND")
+                .get(null);
     }
 
     private static ClassLoader requirePluginClassLoader() throws ClassNotFoundException {
