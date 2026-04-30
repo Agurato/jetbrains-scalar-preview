@@ -1,3 +1,5 @@
+import org.jetbrains.intellij.platform.gradle.tasks.RunIdeTask
+
 plugins {
     id("java")
     alias(libs.plugins.kotlin)
@@ -44,6 +46,11 @@ intellijPlatform {
 }
 
 tasks {
+    withType<RunIdeTask>().configureEach {
+        // Work around an IU 2025.3.1 sandbox startup issue in the bundled Kubernetes plugin.
+        systemProperty("idea.suppressed.plugins.id", "com.intellij.kubernetes")
+    }
+
     wrapper {
         gradleVersion = providers.gradleProperty("gradleVersion").get()
     }
