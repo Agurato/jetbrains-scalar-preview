@@ -1,0 +1,165 @@
+openapi: 3.1.0
+info:
+  title: Schema Kitchen Sink API
+  version: 0.9.0
+  description: Fixture covering discriminators, oneOf, multipart upload, nullable-like unions, and nested objects.
+servers:
+  - url: https://schema.example.test
+paths:
+  /assets:
+    post:
+      summary: Upload an asset
+      operationId: uploadAsset
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+                - metadata
+              properties:
+                file:
+                  type: string
+                  format: binary
+                metadata:
+                  $ref: "#/components/schemas/AssetMetadata"
+            encoding:
+              metadata:
+                contentType: application/json
+      responses:
+        "201":
+          description: Asset created.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Asset"
+  /search:
+    post:
+      summary: Search across typed resources
+      operationId: searchResources
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SearchRequest"
+      responses:
+        "200":
+          description: Search results.
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - results
+                properties:
+                  results:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/SearchResult"
+components:
+  schemas:
+    AssetMetadata:
+      type: object
+      required:
+        - title
+        - visibility
+      additionalProperties:
+        type: string
+      properties:
+        title:
+          type: string
+          minLength: 1
+        visibility:
+          type: string
+          enum:
+            - private
+            - team
+            - public
+        expiresAt:
+          type:
+            - string
+            - "null"
+          format: date-time
+    Asset:
+      type: object
+      required:
+        - id
+        - metadata
+        - links
+      properties:
+        id:
+          type: string
+        metadata:
+          $ref: "#/components/schemas/AssetMetadata"
+        links:
+          type: object
+          required:
+            - download
+          properties:
+            download:
+              type: string
+              format: uri
+            thumbnail:
+              type:
+                - string
+                - "null"
+              format: uri
+    SearchRequest:
+      type: object
+      required:
+        - query
+      properties:
+        query:
+          type: string
+        filters:
+          type: object
+          propertyNames:
+            pattern: "^[a-z][a-zA-Z0-9]*$"
+          additionalProperties:
+            oneOf:
+              - type: string
+              - type: number
+              - type: boolean
+    SearchResult:
+      oneOf:
+        - $ref: "#/components/schemas/UserResult"
+        - $ref: "#/components/schemas/DocumentResult"
+      discriminator:
+        propertyName: kind
+        mapping:
+          user: "#/components/schemas/UserResult"
+          document: "#/components/schemas/DocumentResult"
+    UserResult:
+      type: object
+      required:
+        - kind
+        - id
+        - displayName
+      properties:
+        kind:
+          const: user
+        id:
+          type: string
+        displayName:
+          type: string
+    DocumentResult:
+      type: object
+      required:
+        - kind
+        - id
+        - title
+        - highlights
+      properties:
+        kind:
+          const: document
+        id:
+          type: string
+        title:
+          type: string
+        highlights:
+          type: array
+          items:
+            type: string

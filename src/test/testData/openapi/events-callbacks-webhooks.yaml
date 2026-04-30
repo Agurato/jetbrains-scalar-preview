@@ -1,0 +1,155 @@
+openapi: 3.1.0
+info:
+  title: Events API With Callbacks
+  version: 1.1.0
+  description: Fixture covering callbacks, webhooks, API keys, and async event payloads.
+servers:
+  - url: https://events.example.test
+paths:
+  /subscriptions:
+    post:
+      summary: Subscribe to events
+      operationId: createSubscription
+      security:
+        - apiKeyHeader: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SubscriptionRequest"
+      responses:
+        "202":
+          description: Subscription accepted.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Subscription"
+      callbacks:
+        eventDelivery:
+          "{$request.body#/callbackUrl}":
+            post:
+              summary: Event delivery callback
+              operationId: deliverEventCallback
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      $ref: "#/components/schemas/EventEnvelope"
+              responses:
+                "204":
+                  description: Event accepted by subscriber.
+webhooks:
+  subscription.created:
+    post:
+      summary: Subscription created webhook
+      operationId: subscriptionCreatedWebhook
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Subscription"
+      responses:
+        "204":
+          description: Webhook accepted.
+components:
+  securitySchemes:
+    apiKeyHeader:
+      type: apiKey
+      in: header
+      name: X-API-Key
+  schemas:
+    SubscriptionRequest:
+      type: object
+      required:
+        - callbackUrl
+        - events
+      properties:
+        callbackUrl:
+          type: string
+          format: uri
+          examples:
+            - https://consumer.example.test/hooks/events
+        events:
+          type: array
+          minItems: 1
+          uniqueItems: true
+          items:
+            type: string
+            enum:
+              - invoice.created
+              - invoice.paid
+              - customer.deleted
+    Subscription:
+      type: object
+      required:
+        - id
+        - callbackUrl
+        - events
+        - createdAt
+      properties:
+        id:
+          type: string
+          examples:
+            - sub_123
+        callbackUrl:
+          type: string
+          format: uri
+        events:
+          type: array
+          items:
+            type: string
+        createdAt:
+          type: string
+          format: date-time
+    EventEnvelope:
+      type: object
+      required:
+        - id
+        - event
+        - createdAt
+        - payload
+      properties:
+        id:
+          type: string
+        event:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        payload:
+          oneOf:
+            - $ref: "#/components/schemas/InvoiceCreated"
+            - $ref: "#/components/schemas/InvoicePaid"
+            - $ref: "#/components/schemas/CustomerDeleted"
+    InvoiceCreated:
+      type: object
+      required:
+        - invoiceId
+        - amount
+      properties:
+        invoiceId:
+          type: string
+        amount:
+          type: number
+          format: double
+    InvoicePaid:
+      type: object
+      required:
+        - invoiceId
+        - paidAt
+      properties:
+        invoiceId:
+          type: string
+        paidAt:
+          type: string
+          format: date-time
+    CustomerDeleted:
+      type: object
+      required:
+        - customerId
+      properties:
+        customerId:
+          type: string

@@ -1,0 +1,240 @@
+openapi: 3.1.0
+info:
+  title: Orders CRUD API
+  version: 2.3.0
+  description: Fixture covering CRUD paths, bearer auth, pagination, and reusable error responses.
+servers:
+  - url: https://orders.example.test/v2
+security:
+  - bearerAuth: []
+tags:
+  - name: Orders
+    description: Order lifecycle operations.
+paths:
+  /orders:
+    get:
+      summary: List orders
+      operationId: listOrders
+      tags:
+        - Orders
+      parameters:
+        - name: status
+          in: query
+          description: Filter by order status.
+          schema:
+            $ref: "#/components/schemas/OrderStatus"
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 25
+      responses:
+        "200":
+          description: A page of orders.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrderPage"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    post:
+      summary: Create an order
+      operationId: createOrder
+      tags:
+        - Orders
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateOrderRequest"
+      responses:
+        "201":
+          description: Order created.
+          headers:
+            Location:
+              description: URL of the created order.
+              schema:
+                type: string
+                format: uri
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /orders/{orderId}:
+    parameters:
+      - name: orderId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: "^ord_[a-z0-9]+$"
+    get:
+      summary: Get one order
+      operationId: getOrder
+      tags:
+        - Orders
+      responses:
+        "200":
+          description: Order details.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    patch:
+      summary: Update order status
+      operationId: updateOrderStatus
+      tags:
+        - Orders
+      requestBody:
+        required: true
+        content:
+          application/merge-patch+json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                status:
+                  $ref: "#/components/schemas/OrderStatus"
+      responses:
+        "200":
+          description: Updated order.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  responses:
+    BadRequest:
+      description: The request is invalid.
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+    Unauthorized:
+      description: Authentication is required.
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+    NotFound:
+      description: The requested resource was not found.
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+  schemas:
+    CreateOrderRequest:
+      type: object
+      required:
+        - customerId
+        - lines
+      additionalProperties: false
+      properties:
+        customerId:
+          type: string
+          examples:
+            - cus_123
+        lines:
+          type: array
+          minItems: 1
+          items:
+            $ref: "#/components/schemas/OrderLine"
+    Order:
+      type: object
+      required:
+        - id
+        - customerId
+        - status
+        - lines
+        - createdAt
+      properties:
+        id:
+          type: string
+          examples:
+            - ord_abc123
+        customerId:
+          type: string
+        status:
+          $ref: "#/components/schemas/OrderStatus"
+        lines:
+          type: array
+          items:
+            $ref: "#/components/schemas/OrderLine"
+        createdAt:
+          type: string
+          format: date-time
+    OrderLine:
+      type: object
+      required:
+        - sku
+        - quantity
+      properties:
+        sku:
+          type: string
+        quantity:
+          type: integer
+          minimum: 1
+    OrderPage:
+      type: object
+      required:
+        - items
+        - page
+        - pageSize
+        - total
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Order"
+        page:
+          type: integer
+        pageSize:
+          type: integer
+        total:
+          type: integer
+    OrderStatus:
+      type: string
+      enum:
+        - draft
+        - paid
+        - shipped
+        - cancelled
+    Problem:
+      type: object
+      required:
+        - title
+        - status
+      properties:
+        type:
+          type: string
+          format: uri
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string

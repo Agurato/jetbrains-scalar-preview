@@ -1,0 +1,37 @@
+openapi: 3.1.0
+info:
+  title: Minimal Ping API
+  version: 1.0.0
+  description: Smallest useful fixture with a single public endpoint.
+servers:
+  - url: https://api.example.test
+paths:
+  /ping:
+    get:
+      summary: Check service availability
+      operationId: ping
+      tags:
+        - Health
+      responses:
+        "200":
+          description: Service is reachable.
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - status
+                  - checkedAt
+                properties:
+                  status:
+                    type: string
+                    enum:
+                      - ok
+                  checkedAt:
+                    type: string
+                    format: date-time
+              examples:
+                healthy:
+                  value:
+                    status: ok
+                    checkedAt: "2026-04-30T10:15:00Z"
