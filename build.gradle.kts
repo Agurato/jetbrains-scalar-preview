@@ -53,4 +53,18 @@ tasks {
     wrapper {
         gradleVersion = providers.gradleProperty("gradleVersion").get()
     }
+
+    signPlugin {
+        certificateChain.set(providers.environmentVariable("CERTIFICATE_CHAIN"))
+        privateKey.set(providers.environmentVariable("PRIVATE_KEY"))
+        password.set(providers.environmentVariable("PRIVATE_KEY_PASSWORD"))
+    }
+
+    verifyPluginSignature {
+        certificateChain.set(providers.environmentVariable("CERTIFICATE_CHAIN"))
+    }
+
+    publishPlugin {
+        token.set(providers.environmentVariable("PUBLISH_TOKEN"))
+    }
 }
