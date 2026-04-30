@@ -1,0 +1,42 @@
+<!-- Plugin Configuration File. Read more: https://plugins.jetbrains.com/docs/intellij/plugin-configuration-file.html -->
+<idea-plugin>
+    <!-- Unique identifier of the plugin. It should be FQN. It cannot be changed between the plugin versions. -->
+    <id>dev.vmonot.scalar-openapi-preview</id>
+
+    <!-- Public plugin name should be written in Title Case.
+     Guidelines: https://plugins.jetbrains.com/docs/marketplace/best-practices-for-listing.html#plugin-name -->
+    <name>Scalar-openapi-preview</name>
+
+    <!-- A displayed Vendor name or Organization ID displayed on the Plugins Page. -->
+    <vendor url="https://vmonot.dev">Vincent MONOT</vendor>
+
+    <!-- Description of the plugin displayed on the Plugin Page and IDE Plugin Manager.
+         Guidelines: https://plugins.jetbrains.com/docs/marketplace/best-practices-for-listing.html#plugin-description -->
+    <description><![CDATA[
+        This plugin allows to use Scalar as OpenAPI specifications preview.
+        ]]></description>
+
+    <!-- Product and plugin compatibility requirements.
+         Read more: https://plugins.jetbrains.com/docs/intellij/plugin-compatibility.html -->
+    <depends>org.jetbrains.plugins.yaml</depends>
+    <depends>com.intellij.swagger</depends>
+
+    <actions>
+        <action id="ScalarOpenApiPreview.OpenScalarPreview"
+                class="dev.vmonot.OpenScalarPreviewAction"
+                text="Open Scalar Preview"
+                description="Open this OpenAPI specification in Scalar"
+                icon="AllIcons.Webreferences.Openapi">
+            <add-to-group group-id="EditorContextBarMenu"/>
+            <add-to-group group-id="EditorPopupMenu" anchor="last"/>
+            <add-to-group group-id="ProjectViewPopupMenu" anchor="last"/>
+        </action>
+    </actions>
+
+    <!-- Extensions defined by the plugin.
+         Read more: https://plugins.jetbrains.com/docs/intellij/plugin-extension-points.html -->
+    <extensions defaultExtensionNs="com.intellij">
+        <fileEditorProvider implementation="dev.vmonot.OpenApiPreviewEditorProvider"/>
+    </extensions>
+
+</idea-plugin>
