@@ -18,7 +18,6 @@
 
     <!-- Product and plugin compatibility requirements.
          Read more: https://plugins.jetbrains.com/docs/intellij/plugin-compatibility.html -->
-    <depends>org.jetbrains.plugins.yaml</depends>
     <depends optional="true">com.intellij.swagger</depends>
 
     <!-- Extensions defined by the plugin.
