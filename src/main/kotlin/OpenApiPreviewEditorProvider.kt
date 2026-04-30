@@ -2,6 +2,11 @@ package dev.vmonot
 
 import com.intellij.icons.AllIcons
 import com.intellij.openapi.Disposable
+import com.intellij.openapi.actionSystem.ActionGroup
+import com.intellij.openapi.actionSystem.ActionUpdateThread
+import com.intellij.openapi.actionSystem.AnAction
+import com.intellij.openapi.actionSystem.AnActionEvent
+import com.intellij.openapi.actionSystem.DefaultActionGroup
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.editor.colors.EditorColorsManager
@@ -18,25 +23,20 @@ import com.intellij.openapi.fileEditor.impl.text.TextEditorProvider
 import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Disposer
+import com.intellij.openapi.util.IconLoader
 import com.intellij.openapi.util.UserDataHolderBase
 import com.intellij.openapi.vfs.VfsUtilCore
 import com.intellij.openapi.vfs.VirtualFile
-import com.intellij.ui.JBColor
 import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBPanel
 import com.intellij.ui.jcef.JBCefApp
 import com.intellij.ui.jcef.JBCefBrowser
-import com.intellij.util.ui.JBUI
 import java.awt.BorderLayout
-import java.awt.FlowLayout
 import java.beans.PropertyChangeListener
 import java.nio.charset.StandardCharsets
 import java.util.Base64
-import javax.swing.DefaultComboBoxModel
-import javax.swing.JButton
 import javax.swing.JComponent
-import javax.swing.JComboBox
-import javax.swing.JPanel
+import javax.swing.Icon
 import javax.swing.Timer
 
 private const val SPECIFICATION_MARKER_READ_LIMIT = 64 * 1024
@@ -52,11 +52,9 @@ class OpenApiPreviewEditorProvider : FileEditorProvider, DumbAware {
         val textEditor = TextEditorProvider.getInstance().createEditor(project, file) as TextEditor
         val previewEditor = OpenApiPreviewBrowser(file)
 
-        return TextEditorWithPreview(
+        return OpenApiEditorWithPreview(
             textEditor,
             previewEditor,
-            "OpenAPI Preview",
-            TextEditorWithPreview.Layout.SHOW_EDITOR_AND_PREVIEW,
         )
     }
 
@@ -75,6 +73,25 @@ class OpenApiPreviewEditorProvider : FileEditorProvider, DumbAware {
 
             return hasOpenApiSpecificationMarker(file)
         }
+    }
+}
+
+private class OpenApiEditorWithPreview(
+    textEditor: TextEditor,
+    private val openApiPreviewEditor: OpenApiPreviewBrowser,
+) : TextEditorWithPreview(
+    textEditor,
+    openApiPreviewEditor,
+    "OpenAPI Preview",
+    Layout.SHOW_EDITOR_AND_PREVIEW,
+) {
+    override fun createRightToolbarActionGroup(): ActionGroup {
+        return DefaultActionGroup(
+            listOf(
+                ReloadPreviewAction(openApiPreviewEditor),
+                SwitchPreviewRendererAction(openApiPreviewEditor),
+            ),
+        )
     }
 }
 
@@ -98,7 +115,6 @@ private class OpenApiPreviewBrowser(
     private val log = logger<OpenApiPreviewBrowser>()
     private val component = JBPanel<JBPanel<*>>(BorderLayout())
     private val previewContainer = JBPanel<JBPanel<*>>(BorderLayout())
-    private val rendererCombo = JComboBox<PreviewRenderer>()
     private val reloadTimer = Timer(350) { loadPreview() }.apply {
         isRepeats = false
     }
@@ -108,7 +124,6 @@ private class OpenApiPreviewBrowser(
     private var disposed = false
 
     init {
-        component.add(createToolbar(), BorderLayout.NORTH)
         component.add(previewContainer, BorderLayout.CENTER)
 
         if (JBCefApp.isSupported()) {
@@ -130,36 +145,21 @@ private class OpenApiPreviewBrowser(
         }, this)
     }
 
-    private fun createToolbar(): JComponent {
-        rendererCombo.model = DefaultComboBoxModel(PreviewRenderer.entries.toTypedArray())
-        rendererCombo.selectedItem = selectedRenderer
-        rendererCombo.addActionListener {
-            val renderer = rendererCombo.selectedItem as? PreviewRenderer ?: return@addActionListener
-            if (renderer != selectedRenderer) {
-                selectedRenderer = renderer
-                loadPreview()
-            }
-        }
-
-        val reloadButton = JButton(AllIcons.Actions.Refresh).apply {
-            toolTipText = "Reload preview"
-            addActionListener {
-                loadPreview()
-            }
-        }
-
-        return JPanel(FlowLayout(FlowLayout.LEFT, JBUI.scale(8), JBUI.scale(4))).apply {
-            border = JBUI.Borders.customLine(JBColor.border(), 0, 0, 1, 0)
-            add(JBLabel("Renderer:"))
-            add(rendererCombo)
-            add(reloadButton)
-        }
-    }
-
     private fun scheduleReload() {
         if (!disposed) {
             reloadTimer.restart()
         }
+    }
+
+    fun reloadPreview() {
+        loadPreview()
+    }
+
+    fun nextRenderer(): PreviewRenderer = selectedRenderer.next()
+
+    fun switchToNextRenderer() {
+        selectedRenderer = nextRenderer()
+        loadPreview()
     }
 
     private fun loadPreview() {
@@ -222,12 +222,54 @@ private class OpenApiPreviewBrowser(
 
 private fun isDarkEditorTheme(): Boolean = EditorColorsManager.getInstance().isDarkEditor
 
-private enum class PreviewRenderer(private val title: String) {
-    SCALAR("Scalar"),
-    REDOC("Redoc"),
-    SWAGGER_UI("Swagger UI");
+private class ReloadPreviewAction(
+    private val previewEditor: OpenApiPreviewBrowser,
+) : AnAction("Reload Preview", "Reload OpenAPI preview", AllIcons.Actions.Refresh) {
+    override fun getActionUpdateThread(): ActionUpdateThread = ActionUpdateThread.EDT
 
-    override fun toString(): String = title
+    override fun actionPerformed(event: AnActionEvent) {
+        previewEditor.reloadPreview()
+    }
+}
+
+private class SwitchPreviewRendererAction(
+    private val previewEditor: OpenApiPreviewBrowser,
+) : AnAction() {
+    override fun getActionUpdateThread(): ActionUpdateThread = ActionUpdateThread.EDT
+
+    override fun update(event: AnActionEvent) {
+        val nextRenderer = previewEditor.nextRenderer()
+
+        event.presentation.text = "Switch to ${nextRenderer.presentableName}"
+        event.presentation.description = "Switch OpenAPI preview to ${nextRenderer.presentableName}"
+        event.presentation.icon = nextRenderer.icon
+    }
+
+    override fun actionPerformed(event: AnActionEvent) {
+        previewEditor.switchToNextRenderer()
+    }
+}
+
+private enum class PreviewRenderer(
+    val presentableName: String,
+    val icon: Icon,
+) {
+    SCALAR("Scalar", PreviewIcons.scalar),
+    REDOC("Redoc", PreviewIcons.redoc),
+    SWAGGER_UI("Swagger UI", PreviewIcons.swaggerUi);
+
+    fun next(): PreviewRenderer {
+        val renderers = entries
+        return renderers[(ordinal + 1) % renderers.size]
+    }
+
+    override fun toString(): String = presentableName
+}
+
+private object PreviewIcons {
+    val scalar: Icon = IconLoader.getIcon("/icons/scalar.svg", PreviewIcons::class.java)
+    val redoc: Icon = IconLoader.getIcon("/icons/redoc.svg", PreviewIcons::class.java)
+    val swaggerUi: Icon = IconLoader.getIcon("/icons/swagger-ui.svg", PreviewIcons::class.java)
 }
 
 private fun renderPreviewHtml(
