@@ -20,6 +20,8 @@ JetBrains IDE plugin that adds a preview editor for OpenAPI specifications, with
 
 The renderer switch button only appears when more than one renderer is available.
 
+The renderer order can be changed in Settings | Tools | Scalar OpenAPI Preview. By default, previews use Scalar first, then Redoc, then Swagger UI.
+
 ## Compatibility
 
 - Requires an IntelliJ Platform IDE with build `253+`.

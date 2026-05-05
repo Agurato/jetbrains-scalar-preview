@@ -24,6 +24,12 @@
     <!-- Extensions defined by the plugin.
          Read more: https://plugins.jetbrains.com/docs/intellij/plugin-extension-points.html -->
     <extensions defaultExtensionNs="com.intellij">
+        <applicationService serviceImplementation="dev.vmonot.OpenApiPreviewSettings"/>
+        <applicationConfigurable
+                id="dev.vmonot.scalar-openapi-preview.settings"
+                parentId="tools"
+                displayName="Scalar OpenAPI Preview"
+                instance="dev.vmonot.OpenApiPreviewSettingsConfigurable"/>
         <fileEditorProvider implementation="dev.vmonot.OpenApiPreviewEditorProvider"/>
     </extensions>
 
