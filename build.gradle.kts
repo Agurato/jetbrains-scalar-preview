@@ -53,6 +53,10 @@ intellijPlatform {
             recommended()
         }
     }
+
+    publishing {
+        token = providers.gradleProperty("intellijPlatformPublishingToken")
+    }
 }
 
 tasks {
