@@ -123,7 +123,7 @@ private class OpenApiPreviewBrowser(
     private var scalarBrowser: JBCefBrowser? = null
     private var officialPreview: FileEditor? = null
     private var officialPreviewClassLoader: ClassLoader? = null
-    private var selectedRenderer = PreviewRenderer.SCALAR
+    private var selectedRenderer = firstAvailableRenderer()
     private var disposed = false
 
     init {
@@ -215,7 +215,7 @@ private class OpenApiPreviewBrowser(
         disposeOfficialPreview()
 
         if (!OfficialSwaggerPreviewBridge.isAvailable()) {
-            selectedRenderer = PreviewRenderer.SCALAR
+            selectedRenderer = firstAvailableRenderer()
             showScalarPreview()
             return
         }
@@ -352,16 +352,22 @@ private class OpenApiPreviewBrowser(
 
     private fun ensureSelectedRendererIsAvailable() {
         if (selectedRenderer !in availableRenderers()) {
-            selectedRenderer = PreviewRenderer.SCALAR
+            selectedRenderer = firstAvailableRenderer()
         }
     }
 
+    private fun firstAvailableRenderer(): PreviewRenderer {
+        return availableRenderers().firstOrNull() ?: PreviewRenderer.SCALAR
+    }
+
     private fun availableRenderers(): List<PreviewRenderer> {
-        return if (OfficialSwaggerPreviewBridge.isAvailable()) {
-            PreviewRenderer.entries
+        val availableRenderers = if (OfficialSwaggerPreviewBridge.isAvailable()) {
+            PreviewRenderer.entries.toSet()
         } else {
-            listOf(PreviewRenderer.SCALAR)
+            setOf(PreviewRenderer.SCALAR)
         }
+
+        return OpenApiPreviewSettings.instance.rendererOrder().filter { it in availableRenderers }
     }
 }
 
