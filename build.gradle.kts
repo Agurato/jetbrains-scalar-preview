@@ -7,7 +7,12 @@ plugins {
 }
 
 group = "dev.vmonot"
-version = "1.0.2"
+version = providers.exec {
+    commandLine("git", "describe", "--tags", "--abbrev=0")
+    isIgnoreExitValue = true
+}.standardOutput.asText.map {
+    it.trim().removePrefix("v").ifEmpty { "dev" }
+}.get()
 
 // Set the JVM language level used to build the project.
 kotlin {
