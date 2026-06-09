@@ -122,7 +122,6 @@ private class OpenApiPreviewBrowser(
 
     private var scalarBrowser: JBCefBrowser? = null
     private var officialPreview: FileEditor? = null
-    private var officialPreviewClassLoader: ClassLoader? = null
     private var selectedRenderer = firstAvailableRenderer()
     private var disposed = false
 
@@ -214,7 +213,8 @@ private class OpenApiPreviewBrowser(
         disposeScalarBrowser()
         disposeOfficialPreview()
 
-        if (!OfficialSwaggerPreviewBridge.isAvailable()) {
+        val swaggerSupport = SwaggerPreviewSupport.getInstance()
+        if (swaggerSupport == null) {
             selectedRenderer = firstAvailableRenderer()
             showScalarPreview()
             return
@@ -222,8 +222,8 @@ private class OpenApiPreviewBrowser(
 
         runCatching {
             when (renderer) {
-                PreviewRenderer.REDOC -> OfficialSwaggerPreviewBridge.createRedoc(file, textEditor, project)
-                PreviewRenderer.SWAGGER_UI -> OfficialSwaggerPreviewBridge.createSwaggerUi(file, textEditor, project)
+                PreviewRenderer.REDOC -> swaggerSupport.createRedoc(file, textEditor, project)
+                PreviewRenderer.SWAGGER_UI -> swaggerSupport.createSwaggerUi(file, textEditor, project)
                 PreviewRenderer.SCALAR -> null
             }
         }.onSuccess { preview ->
@@ -231,7 +231,6 @@ private class OpenApiPreviewBrowser(
                 previewContainer.add(JBLabel("${renderer.presentableName} is not available."), BorderLayout.CENTER)
             } else {
                 officialPreview = preview
-                officialPreviewClassLoader = OfficialSwaggerPreviewBridge.currentPluginClassLoader()
                 previewContainer.add(preview.component, BorderLayout.CENTER)
             }
         }.onFailure { error ->
@@ -249,13 +248,14 @@ private class OpenApiPreviewBrowser(
             showSelectedRenderer()
             return
         }
-        if (officialPreviewClassLoader !== OfficialSwaggerPreviewBridge.currentPluginClassLoader()) {
+        val swaggerSupport = SwaggerPreviewSupport.getInstance()
+        if (swaggerSupport == null) {
             showSelectedRenderer()
             return
         }
 
         val reloaded = runCatching {
-            OfficialSwaggerPreviewBridge.reload(currentPreview, file)
+            swaggerSupport.reload(currentPreview, file)
         }.onFailure { error ->
             log.warn("Failed to reload ${selectedRenderer.presentableName} preview for ${file.path}", error)
         }.getOrDefault(false)
@@ -347,7 +347,6 @@ private class OpenApiPreviewBrowser(
             }
         }
         officialPreview = null
-        officialPreviewClassLoader = null
     }
 
     private fun ensureSelectedRendererIsAvailable() {
@@ -361,7 +360,7 @@ private class OpenApiPreviewBrowser(
     }
 
     private fun availableRenderers(): List<PreviewRenderer> {
-        val availableRenderers = if (OfficialSwaggerPreviewBridge.isAvailable()) {
+        val availableRenderers = if (SwaggerPreviewSupport.isAvailable()) {
             PreviewRenderer.entries.toSet()
         } else {
             setOf(PreviewRenderer.SCALAR)

@@ -18,6 +18,16 @@ internal fun renderScalarPreviewHtml(
         else -> "application/yaml"
     }
 
+    val hiddenClients = OpenApiPreviewSettings.instance.hiddenScalarClients()
+    val hiddenClientsJson = if (hiddenClients.isEmpty()) {
+        "{}"
+    } else {
+        val grouped = hiddenClients.map { it.split(":") }.groupBy({ it[0] }, { it[1] })
+        grouped.entries.joinToString(separator = ", ", prefix = "{", postfix = "}") { (lang, clients) ->
+            "\"$lang\": [${clients.joinToString(", ") { "\"$it\"" }}]"
+        }
+    }
+
     return renderRendererTemplate(
         templateName = "scalar.html",
         fileName = fileName,
@@ -26,7 +36,7 @@ internal fun renderScalarPreviewHtml(
         darkTheme = darkTheme,
         rendererValues = mapOf(
             "VENDOR_SCALAR_JS" to inlineScript("preview/vendor/scalar-api-reference-1.55.0.js"),
-            "SCALAR_INIT_JS" to inlineScript("preview/scripts/scalar-init.js"),
+            "SCALAR_INIT_JS" to inlineScript("preview/scripts/scalar-init.js", mapOf("HIDDEN_CLIENTS_JSON" to hiddenClientsJson)),
         ),
     )
 }

@@ -4,6 +4,7 @@ try {
     darkMode: window.OpenApiPreview.darkTheme,
     forceDarkModeState: window.OpenApiPreview.darkTheme ? 'dark' : 'light',
     documentDownloadType: 'both',
+    hiddenClients: {{HIDDEN_CLIENTS_JSON}},
     defaultHttpClient: {
       targetKey: 'shell',
       clientKey: 'curl'

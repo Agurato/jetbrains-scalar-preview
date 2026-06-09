@@ -26,8 +26,15 @@ internal class OpenApiPreviewSettings : PersistentStateComponent<OpenApiPreviewS
             .toMutableList()
     }
 
+    fun hiddenScalarClients(): Set<String> = state.hiddenScalarClients.toSet()
+
+    fun setHiddenScalarClients(hiddenClients: Set<String>) {
+        state.hiddenScalarClients = hiddenClients.toMutableList()
+    }
+
     internal class SettingsState {
         var rendererOrder: MutableList<String> = DEFAULT_RENDERER_ORDER.map { it.name }.toMutableList()
+        var hiddenScalarClients: MutableList<String> = mutableListOf()
     }
 
     companion object {

@@ -78,8 +78,4 @@ tasks {
     verifyPluginSignature {
         certificateChain.set(providers.environmentVariable("CERTIFICATE_CHAIN"))
     }
-
-    publishPlugin {
-        token.set(providers.environmentVariable("PUBLISH_TOKEN"))
-    }
 }

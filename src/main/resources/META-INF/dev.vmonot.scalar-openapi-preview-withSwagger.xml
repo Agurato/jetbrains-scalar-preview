@@ -1,2 +1,7 @@
 <idea-plugin>
+    <extensions defaultExtensionNs="com.intellij">
+        <applicationService
+                serviceInterface="dev.vmonot.SwaggerPreviewSupport"
+                serviceImplementation="dev.vmonot.swagger.SwaggerPreviewSupportImpl"/>
+    </extensions>
 </idea-plugin>
